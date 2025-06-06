@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: karibo
+    env: go
+    buildCommand: go build -o main .
+    startCommand: ./main
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000
