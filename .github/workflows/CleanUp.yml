@@ -1,0 +1,31 @@
+name: Go Mod Tidy Check
+
+on:
+  pull_request:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+
+jobs:
+  tidy-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21' # or your actual Go version
+
+      - name: Run go mod tidy
+        run: go mod tidy
+
+      - name: Check for changes in go.mod or go.sum
+        run: |
+          git diff --exit-code go.mod go.sum || (
+            echo "::error file=go.mod::Run 'go mod tidy' and commit changes";
+            exit 1
+          )
