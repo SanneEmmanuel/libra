@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Libra API - How to Use</title>
+</head>
+<body>
+    <h1>Using the Libra API</h1>
+    <p><strong>POST</strong> <code>/chatx</code></p>
+    <ul>
+        <li><code>command</code> - the task you want to perform</li>
+        <li><code>attachment</code> - a file (image, doc, etc.)</li>
+    </ul>
+    <pre>
+curl -X POST http://your-api.com/chatx \
+  -F "command=Describe this image" \
+  -F "attachment=@path/to/image.jpg"
+    </pre>
+</body>
+</html>
