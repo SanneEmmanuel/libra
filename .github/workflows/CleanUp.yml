@@ -1,4 +1,4 @@
-name: Go Mod Tidy Check
+name: CleanUp
 
 on:
   pull_request:
