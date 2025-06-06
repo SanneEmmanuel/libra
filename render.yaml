@@ -2,7 +2,7 @@ services:
   - type: web
     name: karibo
     env: go
-    buildCommand: go build -o main .
+    buildCommand: GOSUMDB=off go build -o main .
     startCommand: ./main
     plan: free
     autoDeploy: true
