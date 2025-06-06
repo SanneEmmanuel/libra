@@ -87,11 +87,11 @@ func LibraChat(userText string, stream bool) (string, error) {
 
     var parsed chatResponse
     if err := json.Unmarshal(body, &parsed); err != nil {
-        return "", fmt.Errorf("invalid JSON from DeepSeek: %v", err)
+        return "", fmt.Errorf("invalid JSON from LibraAI source: %v", err)
     }
 
     if len(parsed.Choices) == 0 {
-        return "", fmt.Errorf("no response from DeepSeek")
+        return "", fmt.Errorf("no response from LibraAI source")
     }
 
     return parsed.Choices[0].Message.Content, nil
