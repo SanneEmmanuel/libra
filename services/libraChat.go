@@ -51,7 +51,7 @@ func LibraChat(userText string, stream bool) (string, error) {
     }
 
     req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("Authorization", "Bearer "+apiKey)
+    req.Header.Set("Authorization", "Bearer sk-280ae96e3d76417194c421ae83125498")
 
     client := &http.Client{}
     resp, err := client.Do(req)
