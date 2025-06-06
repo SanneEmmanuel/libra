@@ -4,3 +4,5 @@ github.com/gorilla/websocket v1.4.2 h1:RIa9YmOryXvEXYfZkBo64O0kqTyH7OtPVWQh4xQ+W
 github.com/gorilla/websocket v1.4.2/go.mod h1:kLbbDzj+P6xOmGfAToh63JPO+jCx9F6W2o+JgZyl5a8=
 github.com/pkg/errors v0.9.1 h1:gpzAvMntkLO6NaF36CZpH90OL9jHmkF9pZzF9Lf99Pk=
 github.com/pkg/errors v0.9.1/go.mod h1:/9fgxO7JJ5iQ+e8rLGOcZnIixxDh5KREenPqE9l4b7E=
+golang.org/x/net v0.0.0-20230405150039-232c91e78a58 h1:LrxMJMDhK3t6/kTj1CrA2n9C8NE2Ev6DcmGHCkBNON4=
+golang.org/x/net v0.0.0-20230405150039-232c91e78a58/go.mod h1:RzQ2QWphnS+Tdc47KQz66aBPkt2Di9pnMZ8+CV28D3M=
