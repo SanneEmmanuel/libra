@@ -1,9 +1,9 @@
-name: CleanUp
+name: Go Mod Tidy Check
 
 on:
   pull_request:
     paths:
-      - '**.go'
+      - '**/*.go'
       - 'go.mod'
       - 'go.sum'
 
@@ -12,13 +12,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21' # or your actual Go version
+          go-version: '1.21'  # Or match your Go version
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Run go mod tidy
         run: go mod tidy
@@ -26,6 +36,6 @@ jobs:
       - name: Check for changes in go.mod or go.sum
         run: |
           git diff --exit-code go.mod go.sum || (
-            echo "::error file=go.mod::Run 'go mod tidy' and commit changes";
+            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' and commit the changes.";
             exit 1
           )
