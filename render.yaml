@@ -2,12 +2,14 @@ services:
   - type: web
     name: karibo
     env: go
-    buildCommand: GOSUMDB=off go build -o main .
-    startCommand: ./main
     plan: free
     autoDeploy: true
+
+    buildCommand: |
+      go build -o main .
+
+    startCommand: ./main
+
     envVars:
       - key: PORT
         value: 10000
-      - key: GOSUMDB
-        value: off
