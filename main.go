@@ -25,15 +25,12 @@ const (
 
 type (
 	AppConfig struct {
-		ModelPath    string
-		Port         int
-		ContextSize  int
-		Threads      int
-		GPULayers    int
-		MaxTokens    int
-		Temperature  float32
-		TopP         float32
-		RepeatPenalty float32
+		ModelPath              string
+		Port, ContextSize      int
+		Threads, GPULayers     int
+		MaxTokens              int
+		Temperature, TopP      float32
+		RepeatPenalty          float32
 	}
 	ChatRequest struct {
 		Message string         `json:"message"`
@@ -44,53 +41,55 @@ type (
 		Tokens   int    `json:"tokens,omitempty"`
 		TimeMS   int64  `json:"time_ms,omitempty"`
 	}
+	PingRequest struct {
+		CallbackURL string `json:"callback_url"`
+	}
 	MessageEntry struct {
 		Role, Content string `json:"role","content"`
 	}
 )
 
 type Server struct {
-	cfg    AppConfig
-	model  *llama.LLama
-	lock   sync.Mutex
-	start  time.Time
+	cfg   AppConfig
+	model *llama.LLama
+	lock  sync.Mutex
+	start time.Time
 }
 
 func main() {
-	cfg := loadFlags()
-	server := &Server{cfg: cfg, start: time.Now()}
+	cfg := parseFlags()
+	s := &Server{cfg: cfg, start: time.Now()}
 
-	if err := server.loadModel(); err != nil {
-		log.Fatalf("init model: %v", err)
+	if err := s.loadModel(); err != nil {
+		log.Fatal("Model init:", err)
 	}
-	defer server.model.Free()
+	defer s.model.Free()
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      server.routes(),
+		Handler:      s.routes(),
 		ReadTimeout:  DefaultTimeout,
 		WriteTimeout: DefaultTimeout,
 		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
-		log.Printf("Serving on :%d", cfg.Port)
+		log.Println("Server at :", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server error: %v", err)
+			log.Fatal("Listen error:", err)
 		}
 	}()
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
-	log.Println("Shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(ctx)
 }
 
-func loadFlags() AppConfig {
+func parseFlags() AppConfig {
 	cfg := AppConfig{}
 	flag.StringVar(&cfg.ModelPath, "model", DefaultModelPath, "")
 	flag.IntVar(&cfg.Port, "port", DefaultPort, "")
@@ -123,11 +122,8 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/chat", s.chat)
 	mux.HandleFunc("/health", s.health)
-	return s.withTimeout(mux)
-}
-
-func (s *Server) withTimeout(h http.Handler) http.Handler {
-	return http.TimeoutHandler(h, DefaultTimeout, `{"error":"timeout"}`)
+	mux.HandleFunc("/ping", s.ping)
+	return http.TimeoutHandler(mux, DefaultTimeout, `{"error":"timeout"}`)
 }
 
 func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
@@ -153,6 +149,26 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	s.respond(w, ChatResponse{Response: resp, Tokens: tokens, TimeMS: time.Since(start).Milliseconds()})
 }
 
+func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req PingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !strings.HasPrefix(req.CallbackURL, "http") {
+		http.Error(w, `{"error":"invalid callback_url"}`, http.StatusBadRequest)
+		return
+	}
+
+	go func(url string) {
+		time.Sleep(8 * time.Minute)
+		http.Post(url, "application/json", strings.NewReader(`{"status":"pong"}`))
+	}(req.CallbackURL)
+
+	s.respond(w, map[string]string{"message": "pong scheduled"})
+}
+
 func (s *Server) predict(prompt string) (string, int, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -164,14 +180,12 @@ func (s *Server) predict(prompt string) (string, int, error) {
 		llama.SetRepeatPenalty(s.cfg.RepeatPenalty),
 		llama.SetStopWords("</s>", "<|user|>"),
 	}
-
 	res, err := s.model.Predict(prompt, opts...)
 	if err != nil {
 		return "", 0, err
 	}
-
-	output := strings.TrimSpace(strings.TrimSuffix(res, "</s>"))
-	return output, len(res), nil
+	out := strings.TrimSpace(strings.TrimSuffix(res, "</s>"))
+	return out, len(res), nil
 }
 
 func (s *Server) buildPrompt(msg string, history []MessageEntry) string {
